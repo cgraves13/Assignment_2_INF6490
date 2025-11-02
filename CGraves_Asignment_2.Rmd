@@ -1,0 +1,183 @@
+---
+title: "Assignment 2 Hypothesis Testing"
+output: html_document
+date: "2025-11-02"
+name: Chantell Graves
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+cereal_data <- read.csv("C:\\Users\\grave\\Downloads\\cereal.csv")
+```
+
+
+
+```{r}
+#explore the data structure
+head(cereal_data)
+summary(cereal_data)
+str(cereal_data)
+```
+
+
+
+```{r}
+# clean data check for missing values
+cereal_data <- na.omit(cereal_data)
+```
+
+```{r}
+#Z-Test: Compare the sugar content of General Mills and Kellogg's cereals.
+
+#Subset the data for two manufactuerers
+manufacturer_ztest <- subset(cereal_data, mfr %in% c("G", "K"))
+
+#Calculate means and standard deviations
+mean_GeneralMills <- mean(manufacturer_ztest$sugars[manufacturer_ztest$mfr == "G"])
+mean_Kelloggs <- mean(manufacturer_ztest$sugars[manufacturer_ztest$mfr == "K"])
+
+sd_GeneralMills <- sd(manufacturer_ztest$sugars[manufacturer_ztest$mfr == "G"])
+sd_Kelloggs <- sd(manufacturer_ztest$sugars[manufacturer_ztest$mfr == "K"])
+
+n_GeneralMills <- sum(manufacturer_ztest$sugars == "G")
+n_Kelloggs <- sum(manufacturer_ztest == "K")
+
+#Perform the Z-test manually
+z_score <- (mean_GeneralMills - mean_Kelloggs) / sqrt((sd_GeneralMills^2 / n_GeneralMills) + (sd_Kelloggs^2 / n_Kelloggs))
+
+#Use standard normal distribution to get the p-value
+p_value <- 2 * pnorm(-abs(z_score))
+list(z_score = z_score, p_value = p_value)
+
+
+```
+```{r}
+#Visualize Z-test
+
+#Parameters for the Z-test
+mu0 <- 0 #null hypothesis mean
+sigma <- 1 #standard deviation
+alpha <- 0.05 #significance level
+z_score <- 0 #example Z-score
+
+#Generate x values for normal distribution
+x <- seq(-4, 4, length.out = 1000)
+y <- dnorm(x, mean = mu0, sd = sigma)
+
+```
+
+```{r}
+#Create the plot
+ggplot(data.frame(x, y), aes(x, y)) +
+  geom_line(color = "blue") +
+  geom_area(data = subset(data.frame(x, y), x < qnorm(alpha)), aes(x, y), fill = "red", alpha = 0.5) + # Rejection region
+  geom_vline(xintercept = z_score, color = "pink", linetype = "dashed") + # Z-score line
+  labs(title = "Z-Test Visualization",
+       x = "Z-values",
+       y = "Density") +
+  geom_text(aes(x = z_score, y = 0.1, label = paste("Z =", round(z_score, 2))), vjust = -1, color = "black") +
+  theme_minimal()
+```
+```{r}
+#T-test comparing sugar content in General Mills and Kelloggs cereals
+# Subset the data
+manufacturer_ttest <- subset(cereal_data, mfr %in% c("G", "K") & !is.na(sugars))
+
+# Perform a one-tailed t-test: H1 = General Mills has higher sugar than Kellogg's
+t_test_result <- t.test(sugars ~ mfr, data = manufacturer_ttest)
+
+# View results
+t_test_result
+
+```
+```{r}
+#Visualize T-test
+#Parameters for the T test
+df <- 20 #degrees of freedom
+t_score <- 0.31147 #Example t-score above
+
+#Generate x values for the T-distribution
+x_t <- seq(-4, 4, length.out = 1000)
+y_t <- dt(x_t, df)
+
+#Create the plot
+ggplot(data.frame(x_t, y_t), aes(x_t, y_t)) +
+  geom_line(color = "purple") +
+  geom_area(data = subset(data.frame(x_t, y_t), x_t < qt(alpha, df)), aes(x_t, y_t), fill = "red", alpha = 0.5) + # Rejection region
+  geom_vline(xintercept = t_score, color = "orange", linetype = "dashed") + # T-score line
+  labs(title = "T-Test Visualization",
+       x = "T-values",
+       y = "Density") +
+  geom_text(aes(x = t_score, y = 0.1, label = paste("T =", round(t_score, 2))), vjust = -1, color = "black") +
+  theme_minimal()
+
+```
+
+```{r}
+#Chi-square test is there an association between the amount of sugar in cereal and the manufacturer
+
+#Create a contingency table for sugar and manufacturer
+sugars_mfr <- table(cereal_data$mfr, cereal_data$sugars)
+
+#Perform the chi-square test
+chi_square_result <- chisq.test(sugars_mfr)
+
+#Display the results
+chi_square_result
+
+```
+```{r}
+#Visualize the Chi-square test
+
+#Parameters for Chi-Square test
+df_chi <- 5 #Degrees of freedom
+chi_score <- 108.34 #Example
+
+#Generate x values for the chi-square distribution
+x_chi <- seq(0, 20, length.out = 1000)
+y_chi <- dchisq(x_chi, df_chi)
+
+# Create the plot
+ggplot(data.frame(x_chi, y_chi), aes(x_chi, y_chi)) +
+  geom_line(color = "brown") +
+  geom_area(data = subset(data.frame(x_chi, y_chi), x_chi > qchisq(0.95, df_chi)), aes(x_chi, y_chi), fill = "red", alpha = 0.5) + # Rejection region
+  geom_vline(xintercept = chi_score, color = "pink", linetype = "dashed") + # Chi-square line
+  labs(title = "Chi-Square Test Visualization",
+       x = "Chi-Square values",
+       y = "Density") +
+  geom_text(aes(x = chi_score, y = 0.1, label = paste("Chi-SQ =", round(chi_score, 2))), vjust = -1, color = "black") +
+  theme_minimal()
+```
+
+```{r}
+#ANOVA test between sugars of two manufacturers
+
+#skipping remove.na because there are no na values to omit in this dataset
+
+#Perform ANOVA
+anova_result <- aov(sugars ~ mfr, data = cereal_data)
+
+#Display the summary
+summary(anova_result)
+
+
+```
+```{r}
+#Visualize ANOVA
+f_value <- summary(anova_result)[[1]][["F value"]][1]
+p_value <- summary(anova_result)[[1]][["Pr(>F)"]][1]
+
+boxplot <- ggplot(cereal_data, aes(x = mfr, y = sugars, fill = mfr)) +
+  geom_boxplot() +
+  stat_summary(fun = mean, geom = "point", shape = 5, size = 3, color = "red") + # Mean points
+  labs(title = "Grams of Sugar by Cereal Manufacturer",
+       x = "Manufacturer",
+       y = "Sugar (g)",
+       caption = paste("F-value:", round(f_value, 2), " | p-value:", formatC(p_value, format = "e"))) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Display the plot
+print(boxplot)
+```
+
